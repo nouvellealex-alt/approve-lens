@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; form-action 'none'; base-uri 'none'">
 <meta name="description" content="Décodez un appel approve ERC-20 dans votre navigateur.">
 <title>Approve Lens · Lire un appel approve</title>
 <style>
@@ -14,6 +14,7 @@ p,small{color:var(--muted)}section,form{margin-top:20px;padding:clamp(18px,4vw,2
 label{display:block;font-weight:650;margin-bottom:7px}textarea,input{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}textarea{min-height:115px;resize:vertical;font-family:ui-monospace,monospace}input{width:7rem;display:block}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}button{font:inherit;font-weight:650;border:1px solid var(--line);border-radius:10px;padding:10px 15px;background:var(--card);color:var(--ink);cursor:pointer}button[type=submit]{background:#284ac6;color:#fff;border-color:#284ac6}
 :focus-visible{outline:3px solid var(--accent);outline-offset:3px}.error{color:var(--error);font-weight:650}.error:empty{display:none}h2{font-size:1.24rem;margin:0}.result{background:var(--soft)}dd{margin:3px 0 12px;overflow-wrap:anywhere;font-family:ui-monospace,monospace}dt{font-weight:650}footer{margin-top:18px}a{color:var(--accent)}
+.popup{width:380px}.popup main{padding:18px}.popup h1{font-size:1.85rem}.popup form,.popup section{padding:16px}.popup textarea{min-height:80px}
 @media(prefers-reduced-motion:no-preference){button{transition:opacity .15s}button:hover{opacity:.82}}
 </style>
 <main>
@@ -40,73 +41,6 @@ label{display:block;font-weight:650;margin-bottom:7px}textarea,input{font:inheri
   </section>
   <footer><small>Interprétation ERC-20 du format ABI. ERC-721 utilise le même sélecteur pour autoriser un NFT. La cible, le réseau et le comportement du contrat restent à vérifier séparément.</small></footer>
 </main>
-<script id="core">
-'use strict';
-const MAX_UINT256 = (1n << 256n) - 1n;
-
-function decodeApproval(input, precision = '') {
-  const data = input.trim().toLowerCase();
-  if (!data) throw new Error('Colle les données de l’appel.');
-  if (!/^0x[0-9a-f]+$/.test(data)) throw new Error('Utilise une valeur hexadécimale commençant par 0x.');
-  if (!data.startsWith('0x095ea7b3')) throw new Error('Le sélecteur doit correspondre à approve(address,uint256).');
-  if (data.length !== 138) throw new Error('Cet appel doit contenir exactement 68 octets.');
-  if (!/^0{24}$/.test(data.slice(10, 34))) throw new Error('Le mot ABI de l’adresse est mal encodé.');
-  const spender = '0x' + data.slice(34, 74);
-  const value = BigInt('0x' + data.slice(74));
-  const kind = value === MAX_UINT256 ? 'max' : value === 0n ? 'zero' : 'finite';
-  const digits = precision.trim();
-  if (digits && (!/^\d{1,3}$/.test(digits) || Number(digits) > 255)) {
-    throw new Error('Les décimales doivent être un entier entre 0 et 255.');
-  }
-  const raw = value.toString();
-  let formatted = null;
-  if (digits && kind !== 'max') {
-    const places = Number(digits);
-    const padded = raw.padStart(places + 1, '0');
-    const fractional = places ? padded.slice(-places).replace(/0+$/, '') : '';
-    formatted = (places ? padded.slice(0, -places) : raw) + (fractional ? ',' + fractional : '');
-  }
-  return {spender, kind, raw, formatted};
-}
-</script>
-<script>
-'use strict';
-const byId = id => document.getElementById(id);
-const titles = {max:'Valeur maximale uint256',zero:'Valeur nulle',finite:'Montant encodé'};
-const summaries = {
-  max:'Pour un ERC-20, cette valeur correspond généralement à une autorisation sans limite.',
-  zero:'Pour un ERC-20, cet appel demande de ramener l’autorisation de cette adresse à zéro.',
-  finite:'Pour un ERC-20, cet appel demande de fixer l’autorisation à cette valeur.'
-};
-function reset() {
-  byId('output').classList.remove('result');
-  byId('title').textContent = 'Ton résultat s’affichera ici';
-  byId('summary').textContent = 'L’analyse se fait dans cette page, même sans connexion.';
-  byId('details').hidden = true;
-  byId('error').textContent = '';
-}
-function render() {
-  reset();
-  try {
-    const decoded = decodeApproval(byId('data').value, byId('decimals').value);
-    byId('title').textContent = titles[decoded.kind];
-    byId('summary').textContent = summaries[decoded.kind];
-    byId('spender').textContent = decoded.spender;
-    byId('raw').textContent = decoded.raw;
-    byId('formatted').textContent = decoded.formatted ?? '';
-    byId('formatted').hidden = byId('formattedLabel').hidden = decoded.formatted === null;
-    byId('details').hidden = false;
-    byId('output').classList.add('result');
-  } catch (error) {
-    byId('error').textContent = error.message;
-  }
-}
-byId('form').addEventListener('input', reset);
-byId('form').addEventListener('submit', event => { event.preventDefault(); render(); });
-byId('demo').addEventListener('click', () => {
-  byId('data').value = '0x095ea7b3' + '0'.repeat(24) + '1'.repeat(40) + (1250000n).toString(16).padStart(64, '0');
-  byId('decimals').value = '6';
-  render();
-});
-</script>
+<script src="decoder.js"></script>
+<script src="app.js"></script>
 </html>

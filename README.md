@@ -8,6 +8,10 @@ An offline browser tool that decodes the address and value in an EVM `approve(ad
 
 Open `index.html` in a modern browser. Select **Essayer un exemple** to decode a synthetic call with the value 1,250,000. With six decimals, the page displays **1,25**. For your own example, paste the call's **data** or **input** field and choose **Décoder l’appel**. The interface is in French.
 
+## Chrome extension
+
+Extract the Chrome release ZIP. Open `chrome://extensions`, enable **Developer mode**, select **Load unpacked**, and choose the folder containing `manifest.json`. The extension uses the same offline decoder and requests zero permissions.
+
 ## Scope
 
 The app accepts exactly one canonical 68-byte call. It reports zero, a finite value, or the exact maximum uint256. Token decimals are optional and supplied by the user. Calculations use BigInt.
@@ -18,7 +22,7 @@ The selector is shared by ERC-721, where the same word represents a token ID. Th
 
 ## Tests
 
-Run `node --test` from the repository root with Node.js 20 or later. The tests execute the decoder embedded in the HTML.
+Run `node --test` from the repository root with Node.js 20 or later. The tests execute the decoder used by both the web app and Chrome popup.
 
 ## Publish
 

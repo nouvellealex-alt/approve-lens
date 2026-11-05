@@ -4,8 +4,7 @@ const {readFileSync} = require('node:fs');
 const {runInNewContext} = require('node:vm');
 const {join} = require('node:path');
 
-const html = readFileSync(join(__dirname, '../index.html'), 'utf8');
-const core = html.match(/<script id="core">([\s\S]*?)<\/script>/)[1];
+const core = readFileSync(join(__dirname, '../decoder.js'), 'utf8');
 const decode = runInNewContext(core + '\ndecodeApproval');
 const spender = 'a'.repeat(40);
 const encode = value => '0x095ea7b3' + '0'.repeat(24) + spender + value.toString(16).padStart(64, '0');
